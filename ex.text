@@ -1,0 +1,77 @@
+HƯỚNG DẪN CHẠY CÁC PART (Windows PowerShell)
+
+Chuẩn bị chung:
+- Python 3.11+, Git, Docker Desktop (WSL2 recommended).
+- Tạo virtualenv trong project khi chạy local: `python -m venv .venv` rồi `.
+.venv\Scripts\Activate.ps1`.
+- PowerShell: dùng `Invoke-RestMethod` cho JSON hoặc `curl.exe` nếu muốn.
+- Nếu PowerShell chặn script: `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`.
+
+Part 1 — Localhost vs Production
+1. Basic (develop):
+   cd 01-localhost-vs-production\develop
+   .venv\Scripts\Activate.ps1
+   pip install -r requirements.txt
+   python app.py
+   # Test (PowerShell):
+   Invoke-RestMethod -Uri "http://localhost:8000/ask?question=Hello" -Method POST
+
+2. Production variant:
+   cd ../production
+   copy .env.example .env
+   .venv\Scripts\Activate.ps1
+   pip install -r requirements.txt
+   python app.py
+   # Test (PowerShell):
+   Invoke-RestMethod -Uri "http://localhost:8000/ask?question=Hello" -Method POST
+
+Part 2 — Docker
+1. Develop Docker image:
+   cd 02-docker\develop
+   docker build -f Dockerfile -t my-agent:develop .
+   docker run -p 8000:8000 my-agent:develop
+   # Test with curl.exe or Invoke-RestMethod (use curl.exe for header strings):
+   & curl.exe -X POST "http://localhost:8000/ask" -H "Content-Type: application/json" -d "{\"question\":\"What is Docker?\"}"
+
+2. Production / multi-service:
+   cd ../production
+   docker build -t my-agent:advanced .
+   docker compose up
+
+Part 3 — Cloud Deployment
+- Railway (optional):
+  npm i -g @railway/cli
+  railway login
+  cd 03-cloud-deployment\railway
+  railway init
+  railway variables set PORT=8000
+  railway variables set AGENT_API_KEY=my-secret-key
+  railway up
+- Render: push repo to GitHub → connect in render.com → use `render.yaml`.
+- GCP Cloud Run: see `03-cloud-deployment\production-cloud-run` (`cloudbuild.yaml`, `service.yaml`).
+
+Part 4 — API Gateway & Security
+1. Develop:
+   cd 04-api-gateway\develop
+   .venv\Scripts\Activate.ps1
+   pip install -r requirements.txt
+   python app.py
+   # Test with API key header (PowerShell):
+   Invoke-RestMethod -Uri "http://localhost:8000/ask?question=Hello" -Method POST -Headers @{ "X-API-Key"="secret-key" }
+
+2. Production (JWT / rate limiting) located in `04-api-gateway/production` — follow README in that folder.
+
+Part 5 — Scaling & Reliability
+- See `05-scaling-reliability` for health/readiness endpoints and `docker-compose` with Nginx.
+- Example: `docker compose up --scale agent=3` from appropriate folder (where `docker-compose.yml` exists).
+- Run tests: `python test_stateless.py` in `05-scaling-reliability/production`.
+
+Part 6 — Final Project
+- Follow instructions in repo root or `06-lab-complete` to build final image and compose stack.
+- Typical steps: create `app/`, implement config, dockerize, set env vars, then deploy to platform.
+
+Windows tips
+- For JSON bodies in PowerShell, prefer `Invoke-RestMethod -ContentType "application/json" -Body $body` where `$body` is a here-string.
+- If you have `curl.exe` (from Git for Windows), call it via `& curl.exe` to use POSIX-style `-H` flags.
+
+Nếu muốn, tôi có thể mở rộng file này thành `RUN_WINDOWS.md` chi tiết cho từng folder.
