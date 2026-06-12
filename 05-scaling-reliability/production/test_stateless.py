@@ -13,6 +13,10 @@ Chạy sau khi docker compose up:
 import json
 import urllib.request
 import urllib.error
+import sys
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 BASE_URL = "http://localhost:8080"
 session_id = None
